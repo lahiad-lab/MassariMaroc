@@ -15,8 +15,7 @@ jobs:
     timeout-minutes: 30
 
     steps:
-
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Java 17
@@ -31,10 +30,13 @@ jobs:
           packages: 'platforms;android-35 build-tools;35.0.0'
 
       - name: Install Gradle
+        shell: bash
         run: |
+          set -e
           wget -q https://services.gradle.org/distributions/gradle-8.10.2-bin.zip
           unzip -q gradle-8.10.2-bin.zip
-          echo "$PWD/gradle-8.10.2/bin" >> "$GITHUB_PATH"
+          echo "$GITHUB_WORKSPACE/gradle-8.10.2/bin" >> "$GITHUB_PATH"
+          gradle --version
 
       - name: Create Android project
         shell: bash
@@ -47,75 +49,248 @@ jobs:
           mkdir -p app/src/main/res/drawable
           mkdir -p app/src/main/assets
 
-          cat > settings.gradle <<'EOF'
-          pluginManagement {
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
-          }
+          printf '%s\n' \
+          'pluginManagement {' \
+          '    repositories {' \
+          '        google()' \
+          '        mavenCentral()' \
+          '        gradlePluginPortal()' \
+          '    }' \
+          '}' \
+          '' \
+          'dependencyResolutionManagement {' \
+          '    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)' \
+          '    repositories {' \
+          '        google()' \
+          '        mavenCentral()' \
+          '    }' \
+          '}' \
+          '' \
+          'rootProject.name = "MassariMaroc"' \
+          'include(":app")' \
+          > settings.gradle
 
-          dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
+          printf '%s\n' \
+          'plugins {' \
+          '    id "com.android.application" version "8.7.3" apply false' \
+          '}' \
+          > build.gradle
 
-          rootProject.name = "MassariMaroc"
-          include(":app")
-          EOF
+          printf '%s\n' \
+          'org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8' \
+          'android.useAndroidX=true' \
+          > gradle.properties
 
-          cat > build.gradle <<'EOF'
-          plugins {
-              id 'com.android.application' version '8.7.3' apply false
-          }
-          EOF
+          printf '%s\n' \
+          'plugins {' \
+          '    id "com.android.application"' \
+          '}' \
+          '' \
+          'android {' \
+          '    namespace "ma.massari.maroc"' \
+          '    compileSdk 35' \
+          '' \
+          '    defaultConfig {' \
+          '        applicationId "ma.massari.maroc"' \
+          '        minSdk 23' \
+          '        targetSdk 35' \
+          '        versionCode 17' \
+          '        versionName "17.0.0"' \
+          '    }' \
+          '}' \
+          > app/build.gradle
 
-          cat > gradle.properties <<'EOF'
-          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
-          android.useAndroidX=true
-          EOF
+          printf '%s\n' \
+          '<resources>' \
+          '    <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">' \
+          '        <item name="android:fontFamily">sans</item>' \
+          '        <item name="android:statusBarColor">#006233</item>' \
+          '        <item name="android:navigationBarColor">#000000</item>' \
+          '        <item name="android:colorAccent">#006233</item>' \
+          '    </style>' \
+          '</resources>' \
+          > app/src/main/res/values/styles.xml
 
-          cat > app/build.gradle <<'EOF'
-          plugins {
-              id 'com.android.application'
-          }
+          printf '%s\n' \
+          '<?xml version="1.0" encoding="utf-8"?>' \
+          '<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"' \
+          '    android:layout_width="match_parent"' \
+          '    android:layout_height="match_parent">' \
+          '' \
+          '    <WebView' \
+          '        android:id="@+id/webView"' \
+          '        android:layout_width="match_parent"' \
+          '        android:layout_height="match_parent" />' \
+          '' \
+          '</FrameLayout>' \
+          > app/src/main/res/layout/activity_main.xml
 
-          android {
-              namespace 'ma.massari.maroc'
-              compileSdk 35
+          printf '%s\n' \
+          '<vector xmlns:android="http://schemas.android.com/apk/res/android"' \
+          '    android:width="108dp"' \
+          '    android:height="108dp"' \
+          '    android:viewportWidth="108"' \
+          '    android:viewportHeight="108">' \
+          '    <path android:fillColor="#006233" android:pathData="M54,4A50,50 0,1 0,54 104A50,50 0,1 0,54 4" />' \
+          '    <path android:fillColor="#FFFFFF" android:pathData="M54,22L61,43L84,43L65,56L72,78L54,65L36,78L43,56L24,43L47,43Z" />' \
+          '</vector>' \
+          > app/src/main/res/drawable/ic_launcher.xml
 
-              defaultConfig {
-                  applicationId 'ma.massari.maroc'
-                  minSdk 23
-                  targetSdk 35
-                  versionCode 17
-                  versionName '17.0.0'
-              }
-          }
-          EOF
+          printf '%s\n' \
+          '<manifest xmlns:android="http://schemas.android.com/apk/res/android">' \
+          '    <uses-permission android:name="android.permission.INTERNET"/>' \
+          '    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>' \
+          '    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>' \
+          '' \
+          '    <application' \
+          '        android:allowBackup="true"' \
+          '        android:hardwareAccelerated="true"' \
+          '        android:icon="@drawable/ic_launcher"' \
+          '        android:label="مساري المغرب"' \
+          '        android:roundIcon="@drawable/ic_launcher"' \
+          '        android:supportsRtl="true"' \
+          '        android:theme="@style/AppTheme"' \
+          '        android:usesCleartextTraffic="false">' \
+          '' \
+          '        <activity' \
+          '            android:name=".MainActivity"' \
+          '            android:exported="true"' \
+          '            android:screenOrientation="portrait">' \
+          '' \
+          '            <intent-filter>' \
+          '                <action android:name="android.intent.action.MAIN"/>' \
+          '                <category android:name="android.intent.category.LAUNCHER"/>' \
+          '            </intent-filter>' \
+          '' \
+          '        </activity>' \
+          '    </application>' \
+          '</manifest>' \
+          > app/src/main/AndroidManifest.xml
 
-          cat > app/src/main/res/values/styles.xml <<'EOF'
-          <resources>
-              <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
-                  <item name="android:fontFamily">sans</item>
-                  <item name="android:windowLightStatusBar">false</item>
-                  <item name="android:statusBarColor">#006233</item>
-                  <item name="android:navigationBarColor">#000000</item>
-                  <item name="android:colorAccent">#006233</item>
-              </style>
-          </resources>
-          EOF
+          printf '%s\n' \
+          'package ma.massari.maroc;' \
+          '' \
+          'import android.Manifest;' \
+          'import android.app.Activity;' \
+          'import android.os.Bundle;' \
+          'import android.content.pm.PackageManager;' \
+          'import android.webkit.GeolocationPermissions;' \
+          'import android.webkit.WebChromeClient;' \
+          'import android.webkit.WebSettings;' \
+          'import android.webkit.WebView;' \
+          'import android.webkit.WebViewClient;' \
+          '' \
+          'public class MainActivity extends Activity {' \
+          '' \
+          '    private WebView webView;' \
+          '    private static final int LOCATION_REQUEST = 1001;' \
+          '' \
+          '    @Override' \
+          '    protected void onCreate(Bundle savedInstanceState) {' \
+          '        super.onCreate(savedInstanceState);' \
+          '        setContentView(R.layout.activity_main);' \
+          '' \
+          '        webView = findViewById(R.id.webView);' \
+          '        WebSettings settings = webView.getSettings();' \
+          '        settings.setJavaScriptEnabled(true);' \
+          '        settings.setDomStorageEnabled(true);' \
+          '        settings.setGeolocationEnabled(true);' \
+          '' \
+          '        webView.setWebViewClient(new WebViewClient());' \
+          '' \
+          '        webView.setWebChromeClient(new WebChromeClient() {' \
+          '            @Override' \
+          '            public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {' \
+          '                callback.invoke(origin, true, false);' \
+          '            }' \
+          '        });' \
+          '' \
+          '        if (android.os.Build.VERSION.SDK_INT >= 23 &&' \
+          '            checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {' \
+          '            requestPermissions(new String[]{' \
+          '                Manifest.permission.ACCESS_FINE_LOCATION,' \
+          '                Manifest.permission.ACCESS_COARSE_LOCATION' \
+          '            }, LOCATION_REQUEST);' \
+          '        }' \
+          '' \
+          '        webView.loadUrl("file:///android_asset/massari_maroc_v17.html");' \
+          '    }' \
+          '' \
+          '    @Override' \
+          '    public void onBackPressed() {' \
+          '        if (webView.canGoBack()) webView.goBack();' \
+          '        else super.onBackPressed();' \
+          '    }' \
+          '}' \
+          > app/src/main/java/ma/massari/maroc/MainActivity.java
 
-          cat > app/src/main/res/drawable/ic_launcher.xml <<'EOF'
-          <vector xmlns:android="http://schemas.android.com/apk/res/android"
-              android:width="108dp"
-              android:height="108dp"
-              android:viewportWidth="108"
-              android:viewportHeight="108">
-              <path
-                  android:fillColor="#006233"
-                  android:pathData="M54,4A50,50
+          printf '%s\n' \
+          '<!doctype html>' \
+          '<html lang="ar" dir="rtl">' \
+          '<head>' \
+          '<meta charset="utf-8">' \
+          '<meta name="viewport" content="width=device-width,initial-scale=1">' \
+          '<title>مساري المغرب V17</title>' \
+          '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">' \
+          '<style>' \
+          '*{box-sizing:border-box}' \
+          'html,body,#map{margin:0;width:100%;height:100%;overflow:hidden}' \
+          'body{font-family:Arial,sans-serif}' \
+          '#map{position:absolute;inset:0}' \
+          '.panel{position:absolute;z-index:1000;top:12px;left:12px;right:12px;background:white;padding:12px;border-radius:18px;box-shadow:0 3px 15px #0003}' \
+          '.title{font-size:21px;font-weight:bold;color:#006233;margin-bottom:10px}' \
+          '.row{display:flex;gap:7px;margin-top:7px}' \
+          'input{flex:1;padding:12px;border:1px solid #ddd;border-radius:12px;font-size:15px}' \
+          'button{flex:1;padding:11px;border:0;border-radius:12px;background:#006233;color:white;font-weight:bold}' \
+          '.secondary{background:#eee;color:#222}' \
+          '.hud{position:absolute;z-index:1000;bottom:15px;left:12px;right:12px;background:white;padding:12px;border-radius:18px;box-shadow:0 3px 15px #0003;text-align:center}' \
+          '.stats{display:flex;justify-content:space-around}.stat b{display:block;color:#006233;font-size:18px}.stat small{color:#666}' \
+          '</style>' \
+          '</head>' \
+          '<body>' \
+          '<div id="map"></div>' \
+          '<div class="panel">' \
+          '<div class="title">🇲🇦 مساري المغرب V17</div>' \
+          '<div class="row"><input id="destination" placeholder="فين باغي تمشي؟"><button onclick="searchDestination()">بحث</button></div>' \
+          '<div class="row"><button id="drive" onclick="setMode("driving")">🚗 سيارة</button><button id="walk" class="secondary" onclick="setMode("walking")">🚶 مشي</button></div>' \
+          '<div class="row"><button onclick="locateMe()">📍 موقعي</button><button onclick="startNavigation()">🧭 ابدأ الملاحة</button><button class="secondary" onclick="clearRoute()">مسح</button></div>' \
+          '</div>' \
+          '<div class="hud"><div class="stats"><div class="stat"><b id="distance">--</b><small>المسافة</small></div><div class="stat"><b id="duration">--</b><small>الوقت</small></div><div class="stat"><b id="speed">0</b><small>km/h</small></div></div><div id="status">جاهز 🇲🇦</div></div>' \
+          '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>' \
+          '<script>' \
+          'let map=L.map("map").setView([31.7917,-7.0926],6);' \
+          'L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(map);' \
+          'let userMarker=null,routeLine=null,destination=null,userLat=null,userLon=null,mode="driving";' \
+          'const statusEl=document.getElementById("status");' \
+          'function status(t){statusEl.textContent=t}' \
+          'function setMode(m){mode=m;document.getElementById("drive").className=m==="driving"?"":"secondary";document.getElementById("walk").className=m==="walking"?"":"secondary";status(m==="driving"?"وضع السيارة 🚗":"وضع المشي 🚶")}' \
+          'function locateMe(){if(!navigator.geolocation){status("الموقع غير مدعوم");return}status("جاري تحديد موقعك...");navigator.geolocation.getCurrentPosition(p=>{userLat=p.coords.latitude;userLon=p.coords.longitude;if(!userMarker)userMarker=L.circleMarker([userLat,userLon],{radius:9,color:"#006233",fillOpacity:1}).addTo(map);else userMarker.setLatLng([userLat,userLon]);map.setView([userLat,userLon],15);status("تم تحديد موقعك 📍")},()=>status("تعذر تحديد الموقع"),{enableHighAccuracy:true,timeout:15000,maximumAge:5000})}' \
+          'async function searchDestination(){let q=document.getElementById("destination").value.trim();if(!q){status("كتب الوجهة أولاً");return}status("جاري البحث...");try{let r=await fetch("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=ar&q="+encodeURIComponent(q+", Morocco"));let d=await r.json();if(!d.length){status("ما لقيتش المكان");return}destination={lat:+d[0].lat,lon:+d[0].lon,name:d[0].display_name};map.setView([destination.lat,destination.lon],14);if(window.dm)map.removeLayer(window.dm);window.dm=L.marker([destination.lat,destination.lon]).addTo(map).bindPopup(destination.name).openPopup();status("تم تحديد الوجهة");if(userLat!==null)calculateRoute()}catch(e){status("خطأ في البحث")}}' \
+          'async function calculateRoute(){if(userLat===null||!destination){status("حدد موقعك والوجهة أولاً");return}status("جاري حساب الطريق...");let profile=mode==="walking"?"foot":"driving";let url="https://router.project-osrm.org/route/v1/"+profile+"/"+userLon+","+userLat+";"+destination.lon+","+destination.lat+"?overview=full&geometries=geojson";try{let r=await fetch(url);let d=await r.json();if(d.code!=="Ok"||!d.routes.length){status("تعذر حساب الطريق");return}let route=d.routes[0];if(routeLine)map.removeLayer(routeLine);routeLine=L.geoJSON(route.geometry).addTo(map);map.fitBounds(routeLine.getBounds(),{padding:[70,70]});let km=route.distance/1000;let min=Math.round(route.duration/60);document.getElementById("distance").textContent=km<1?Math.round(route.distance)+" m":km.toFixed(1)+" km";document.getElementById("duration").textContent=min<60?min+" د":Math.floor(min/60)+" س "+min%60+" د";status("الطريق جاهز 🧭")}catch(e){status("خطأ في التوجيه")}}' \
+          'function startNavigation(){if(!destination){status("حدد الوجهة أولاً");return}if(userLat===null){locateMe();setTimeout(calculateRoute,2000)}else calculateRoute()}' \
+          'function clearRoute(){if(routeLine){map.removeLayer(routeLine);routeLine=null}if(window.dm){map.removeLayer(window.dm);window.dm=null}destination=null;document.getElementById("distance").textContent="--";document.getElementById("duration").textContent="--";status("تم مسح الطريق")}' \
+          'locateMe();' \
+          '</script>' \
+          '</body>' \
+          '</html>' \
+          > app/src/main/assets/massari_maroc_v17.html
+
+          echo "ANDROID PROJECT CREATED"
+          find app -type f | sort
+
+      - name: Build Debug APK
+        shell: bash
+        run: |
+          set -e
+          echo "STARTING APK BUILD"
+          gradle :app:assembleDebug --no-daemon --stacktrace
+          echo "APK BUILD FINISHED"
+          ls -lh app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MassariMaroc-V17-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
